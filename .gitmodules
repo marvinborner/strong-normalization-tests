@@ -1,0 +1,6 @@
+[submodule "optiscope"]
+	path = optiscope
+	url = https://github.com/etiamz/optiscope.git
+[submodule "AIT"]
+	path = AIT
+	url = https://github.com/tromp/AIT.git

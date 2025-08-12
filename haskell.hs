@@ -39,7 +39,6 @@ toDeBruijn = go []
   go vs (Abs n t) = DAbs $ go (n : vs) t
   go vs (App a b) = DApp (go vs a) (go vs b)
 
-
 fromBinary :: String -> Term
 fromBinary = fst . go [] 0
  where
@@ -65,9 +64,11 @@ main = do
   reduced <- flip mapM ls $ \line -> do
     let bruijn : tests : _ = splitOn ": " line
     let left : right : _   = splitOn " - " tests
-    let left'              = reduce $ fromBinary left
-    let right'             = reduce $ fromBinary right
-    putStrLn $ "reducing: " <> bruijn
-    return (bruijn, toDeBruijn left' == toDeBruijn right')
+    let left'              = toDeBruijn $ reduce $ fromBinary left
+    let right'             = toDeBruijn $ fromBinary right
+    -- putStrLn $ "reducing: " <> bruijn
+    return (bruijn, left' == right')
   let failing = filter (not . snd) reduced
-  putStrLn $ "failing: " <> show failing
+  putStrLn $ "passed: " <> show (length ls - length failing)
+  putStrLn $ "timeout: 0" -- TODO?
+  putStrLn $ "failed: " <> show (length failing)
