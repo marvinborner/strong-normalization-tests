@@ -20,6 +20,7 @@ jobs:
       - name: Haskell
         run: |
           cabal install --lib split
+          cabal install --lib containers
           runhaskell haskell.hs
 
       - name: Optiscope
