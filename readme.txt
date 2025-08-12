@@ -30,7 +30,7 @@ Any test reducing for more than 5s without reaching a normal form is deemed to h
 │ Test            │ Passed │ Timeout │ Failed │
 ├─────────────────┼────────┼─────────┼────────┤
 │ Haskell HOAS    │ 3466   │ 0       │ 0      │
-│ Optiscope       │ 3385   │ 81      │ 0      │
+│ Optiscope       │ 3301   │ 164     │ 1      │
 │ Tromp AIT/nf.c  │ 1935   │ 5       │ 1526   │
 │ Your project    │ ?      │ ?       │ ?      │
 └─────────────────┴────────┴─────────┴────────┘
