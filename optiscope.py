@@ -116,7 +116,7 @@ def genFile(funcs, tests):
         }} \\
         \\
         if (result == 0) {{ \\
-            printf("Timeout!\n"); \\
+            printf("Timeout!\\n"); \\
             kill(pid, SIGKILL); \\
             waitpid(pid, &status, 0); \\
         }} else if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {{ \\
