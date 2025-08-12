@@ -5,10 +5,21 @@ import subprocess
 funcId = 0
 
 
+def symbolify(n):
+    CHRS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+    b = len(CHRS)
+
+    res = ""
+    while n:
+        res += CHRS[int(n % b)]
+        n //= b
+    return res
+
+
 def toC(blc):
     global funcId
 
-    symbols = ["a"]
+    symbols = 1
 
     used = set()
     stack = []
@@ -19,12 +30,11 @@ def toC(blc):
         nonlocal res, symbols
 
         if blc[i] == "0" and blc[i + 1] == "0":
-            used.add("".join(symbols))
-            stack.append("".join(symbols))
-            res += f"lambda({"".join(symbols)}, "
-            symbols[-1] = chr(ord(symbols[-1]) + 1)
-            if ord(symbols[-1]) > ord("y"):
-                symbols.append("a")
+            symbol = symbolify(symbols)
+            used.add(symbol)
+            stack.append(symbol)
+            res += f"lambda({symbol}, "
+            symbols += 1
             j = parse(i + 2)
             res += ")"
             stack.pop()
