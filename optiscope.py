@@ -2,16 +2,20 @@
 
 import subprocess
 
+# we group tests because otherwise the "translation unit" is too large for clang :-(
+GROUP = 100
+CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+TESTS = open("tests").readlines()
+
 funcId = 0
 
 
 def symbolify(n):
-    CHRS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-    b = len(CHRS)
+    b = len(CHARS)
 
-    res = ""
+    res = "_"
     while n:
-        res += CHRS[int(n % b)]
+        res += CHARS[int(n % b)]
         n //= b
     return res
 
@@ -127,12 +131,15 @@ def genFile(funcs, tests):
         \\
         if (result == 0) {{ \\
             printf("Timeout!\\n"); \\
+            fflush(stdout); \\
             kill(pid, SIGKILL); \\
             waitpid(pid, &status, 0); \\
         }} else if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {{ \\
             printf("Passed!\\n"); \\
+            fflush(stdout); \\
         }} else {{ \\
             printf("Failed!\\n"); \\
+            fflush(stdout); \\
         }} \\
     }} else {{ \\
         perror("Failed!"); \\
@@ -140,6 +147,7 @@ def genFile(funcs, tests):
 }} while(0)
 
 #define OPTISCOPE_TESTS_NO_MAIN
+#undef _DEFAULT_SOURCE
 
 #include "optiscope/tests.c"
 
@@ -158,25 +166,47 @@ int main(void) {{
 """
 
 
-funcs = ""
-cases = ""
-TESTS = open("tests").readlines()
-for l in TESTS:
-    bruijn, tests = l.split(": ")
-    left, right = tests.split(" - ")
+passed, timeout, failed = 0, 0, 0
 
-    cases += f'TIMEOUT_TEST(TEST_CASE(func{funcId}, "{toLambda(right)}"));\n'
-    funcs += f"// {bruijn}\n"
-    funcs += toC(left)
 
-with open(f"optiscopeTests.c", "w") as f:
-    f.write(genFile(funcs, cases))
+def runRange(start, end):
+    global passed, timeout, failed
 
-subprocess.run(["cc", "optiscopeTests.c", "optiscope/optiscope.c"])
-out = subprocess.check_output("./a.out", stderr=subprocess.STDOUT).decode(
-    "utf-8"
-)
+    funcs = ""
+    cases = ""
+    for l in TESTS[start:end]:
+        bruijn, tests = l.split(": ")
+        left, right = tests.split(" - ")
 
-print("passed:", out.count("Good:"))
-print("timeout:", out.count("Timeout!"))
-print("failed:", out.count("Failed!"))  # TODO: does not count NF mismatches
+        cases += (
+            f'TIMEOUT_TEST(TEST_CASE(func{funcId}, "{toLambda(right)}"));\n'
+        )
+        funcs += f"// {bruijn}\n"
+        funcs += toC(left)
+
+    with open(f"optiscopeTests{start}.c", "w") as f:
+        f.write(genFile(funcs, cases))
+
+    subprocess.run(
+        [
+            "cc",
+            f"optiscopeTests{start}.c",
+            "optiscope/optiscope.c",
+        ]
+    )
+    out = subprocess.check_output("./a.out", stderr=subprocess.STDOUT).decode(
+        "utf-8"
+    )
+
+    passed += out.count("Good")
+    timeout += out.count("Timeout")
+    failed += out.count("Failed")  # TODO: does not count NF mismatches
+    print(passed, timeout, failed)
+
+
+for start in range(0, len(TESTS), GROUP):
+    runRange(start, start + GROUP)
+
+print("passed:", passed)
+print("timeout:", timeout)
+print("failed:", failed)
