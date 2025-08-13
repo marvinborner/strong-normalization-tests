@@ -1,6 +1,8 @@
 #!/bin/env python3
 
 import subprocess
+import multiprocessing
+from functools import partial
 
 # we group tests because otherwise the "translation unit" is too large for clang :-(
 GROUP = 100
@@ -166,12 +168,10 @@ int main(void) {{
 """
 
 
-passed, timeout, failed = 0, 0, 0
-
-
 def runRange(start, end):
-    global passed, timeout, failed
-
+    global funcId
+    funcId = start
+    
     funcs = ""
     cases = ""
     for l in TESTS[start:end]:
@@ -192,21 +192,35 @@ def runRange(start, end):
             "cc",
             f"optiscopeTests{start}.c",
             "optiscope/optiscope.c",
+            "-o",
+            f"optiscopeTests{start}.out",
         ]
     )
-    out = subprocess.check_output("./a.out", stderr=subprocess.STDOUT).decode(
+    out = subprocess.check_output(f"./optiscopeTests{start}.out", stderr=subprocess.STDOUT).decode(
         "utf-8"
     )
 
-    passed += out.count("Good")
-    timeout += out.count("Timeout")
-    failed += out.count("Failed")  # TODO: does not count NF mismatches
-    print(passed, timeout, failed)
+    passed = out.count("Good")
+    timeout = out.count("Timeout")
+    failed = out.count("Failed")  # TODO: does not count NF mismatches
+    
+    print(f"Group {start}-{end}: passed={passed}, timeout={timeout}, failed={failed}", flush=True)
+    
+    subprocess.run(["rm", f"optiscopeTests{start}.c", f"optiscopeTests{start}.out"], stderr=subprocess.DEVNULL)
+    
+    return passed, timeout, failed
 
 
-for start in range(0, len(TESTS), GROUP):
-    runRange(start, start + GROUP)
-
-print("passed:", passed)
-print("timeout:", timeout)
-print("failed:", failed)
+if __name__ == "__main__":
+    ranges = [(start, min(start + GROUP, len(TESTS))) for start in range(0, len(TESTS), GROUP)]
+    
+    with multiprocessing.Pool(processes=4) as pool:
+        results = pool.starmap(runRange, ranges)
+    
+    total_passed = sum(r[0] for r in results)
+    total_timeout = sum(r[1] for r in results)
+    total_failed = sum(r[2] for r in results)
+    
+    print("passed:", total_passed)
+    print("timeout:", total_timeout)
+    print("failed:", total_failed)
