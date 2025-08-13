@@ -1,9 +1,13 @@
-Test suite for strong normalization
-───────────────────────────────────
+Test suite for strong β-reduction
+─────────────────────────────────
+
+We refer to reducers reducing under abstractions as 𝑠𝑡𝑟𝑜𝑛𝑔 reducers.
+The suite tests for strong β-reduction until normal form and therefore assumes reduction strategies where such normal form is found.
+(e.g. normal-order, leftmost-outermost, commonly referred to as Call-by-Need)
 
 Languages may be tested in one of two ways:
 
-- if the language reduces strongly, translate the tests to the language and use it to reduce the terms directly
+- if the language reduces strongly and lazily, translate the tests to the language and use it to reduce the terms directly
 - if not, use a higher order (or NbE) reducer to reduce the terms
 
 Please contribute!
