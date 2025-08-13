@@ -214,7 +214,7 @@ def runRange(start, end):
 if __name__ == "__main__":
     ranges = [(start, min(start + GROUP, len(TESTS))) for start in range(0, len(TESTS), GROUP)]
     
-    with multiprocessing.Pool(processes=8) as pool:
+    with multiprocessing.Pool(processes=4) as pool:
         results = pool.starmap(runRange, ranges)
     
     total_passed = sum(r[0] for r in results)
